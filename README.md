@@ -1,165 +1,138 @@
-<div align="center">
-    <img href="https://projecterror.dev" width="150" src="https://i.tasoagc.dev/c1pD" alt="Material-UI logo" />
-</div>
-<h1 align="center">Svelte & Lua Boilerplate</h1>
+# QB-Interact
 
-This repository is a basic boilerplate for getting started
-with Svelte in NUI. It can be used for both in browser and
-in game development.
+## Description
+A quick and seamless alternative to the classic "Press E" interaction system.  
+It uses a data structure similar to **qb-target** and allows easier implementation of **multiple interaction options per zone**.
 
-Utilizing `Vite` allows us to have hot builds while developing in game
-by restarting the resource, instead of having to make a production build.
+---
 
-This version of the boilerplate is meant for the CfxLua runtime.
+## Installation
 
-## Requirements
-* [Node > v10.6](https://nodejs.org/en/)
-* [pnpm](https://pnpm.io/installation) (Highly recommended over yarn or npm)
+### Step 1:
+- Drag and Drop into your `resources` folder.
 
-*A basic understanding of the modern web development workflow. If you don't 
-know this yet, Svelte might not be for you just yet.*
+### Step 2:
+- Party 🎉
 
-## Getting Started
+---
 
-First clone the repository or use the template option and place
-it within your `resources` folder
+## Exports
 
-### Installation
+## Options Table
 
-Install dependencies by navigating to the `web` folder within
-a terminal of your choice and type `pnpm i`.
+Each zone can contain one or more **interaction options**, allowing multiple contextual choices for the player.
 
-## Features
+| Key | Required | Type | Description |
+|:----|:----------|:------|:-------------|
+| `label` | ✅ | string | Text displayed in the UI for the option. |
+| `event` | ❌ | string | Event name to trigger when selected. |
+| `type` | ❌ | string | `"client"` or `"server"` — determines where the event is fired. |
+| `action` | ❌ | function | Direct function to execute instead of an event. |
+| `args` | ❌ | table | Arguments passed to the event or action. |
+| `item` | ❌ | string | Requires the player to have a specific item. |
+| `job` | ❌ | string / table | Restricts access to one or more job names. |
+| `gang` | ❌ | string / table | Restricts access to one or more gang names. |
+| `citizenid` | ❌ | string / table | Restricts access to specific player citizen IDs. |
+| `canInteract` | ❌ | function | Optional conditional function. Must return `true` for option to appear. |
 
-This boilerplate comes with some utilities and examples to work off of.
+---
 
-### Svelte Utils
+### `addInteractZone(interactData)`
+Adds an interactable zone at specified coordinates with given options.
 
-Signatures are not included for these utilities as the type definitions
-are sufficient enough.
-
-**Toggling main frame visibility**
-
-You can exit the UI frame using the `ESC` key, if you need to forcefully
-hide it you can use `visibility.set()`, visibility being an exported writable
-from the Svelte store.
-
-Before being able to use the writable you must first import it from `store/stores.ts`
-```svelte
-<button on:click={() => visibility.set(false)}>
-  Exit
-</button>
-```
-
-**useNuiEvent**
-
-This is a custom function that is designed to intercept and handle
-messages dispatched by the game scripts. This is the primary
-way of creating passive listeners.
+| Value | Required | Type | Default | Description |
+|:------|:----------|:------|:----------|:-------------|
+| `name` | ✅ | string | n/a | Unique identifier for the zone. |
+| `coords` | ✅ | vector3 / vector4 | n/a | Center coordinates of the zone. |
+| `length` | ❌ | number | `2.0` | Length of the interaction zone. |
+| `width` | ❌ | number | `2.0` | Width of the interaction zone. |
+| `height` | ❌ | number | `2.0` | Height of the interaction zone (used for Z bounds). |
+| `options` | ✅ | table | n/a | Table of interaction options (see below). |
 
 
-*Note: For now handlers can only be registered a single time. I haven't
-come across a personal usecase for a cascading event system*
 
-**Usage**
-```svelte
-<script lang="ts">
-  let characterName: string;
-  
-  useNuiEvent<string>('myAction', (data) => {
-    // the first argument to the handler function
-    // is the data argument sent using SendNUIMessage
-    
-    // do whatever logic u want here
-    characterName = data;
-  })
-</script>
-
-<div>{characterName}</div>
-```
-
-**fetchNui**
-
-This is a simple NUI focused wrapper around the standard `fetch` API.
-This is the main way to accomplish active NUI data fetching 
-or to trigger NUI callbacks in the game scripts.
-
-When using this, you must always at least callback using `{}`
-in the gamescripts.
-
-*This can be heavily customized to your use case*
-
-**Usage**
-```svelte
-<script lang="ts">
-  let clientCoords: {x: number; y: number; z: number};
-
-  fetchNui<{x: number; y: number; z: number}>('getClientData').then(retData => {
-    console.log('Got return data from client scripts:', retData);
-    clientCoords = retData
-  }).catch(e => {
-    console.log('Setting mock data due to error', e)
-    clientCoords = {x: 500, y: 300: z: 200}
-  })
-</script>
-
-<div>{clientCoords}</div>
-```
-
-**debugData**
-
-This is a function allowing for mocking dispatched game script
-actions in a browser environment. It will trigger `useNuiEvent` handlers
-as if they were dispatched by the game scripts. **It will only fire if the current
-environment is a regular browser and not CEF**
-
-**Usage**
-```ts
-// This will target the useNuiEvent function registered with `setVisible`
-// and pass them the data of `true`
-<script lang="ts">
-  debugData([
-    {
-      action: 'setVisible',
-      data: true,
+#### Example
+```lua
+exports['qb-interact']:addInteractZone({
+    name = "atm_zone",
+    coords = vector4(147.24, -1035.73, 29.34, 340.0),
+    length = 1.5,
+    width = 1.5,
+    options = {
+        {
+            label = "Use ATM",
+            event = "bank:open",
+            type = "client"
+        },
+        {
+            label = "Hack ATM",
+            event = "atm:hack",
+            type = "server",
+            job = {"hacker"}
+        },
+        {
+          label = "This Is An Example",
+          item = 'lockpick',
+          job = {'police', 'ambulance', 'mechanic'},
+          gang = 'ballas',
+          citizenid = {'ABC1234'},
+          -- this option will only show IF you have a lockpick, are in the ballas, if your citizenid is ABC1234 and if you are a police, ambulance or mechanic job. if one fails 
+          -- you will not be shown this option
+        }
     }
-  ])
-<script
+})
 ```
 
-**Misc Utils**
+---
 
-These are small but useful included utilities.
+### `addEntityZone(entity, zoneOptions)`
+Adds an interactable zone attached to a specific **entity** with given options.
 
-* `isEnvBrowser()` - Will return a boolean indicating if the current 
-  environment is a regular browser. (Useful for logic in development)
+| Value | Required | Type | Default | Description |
+|:------|:----------|:------|:----------|:-------------|
+| `entity` | ✅ | number | n/a | The entity handle to attach the zone to. |
+| `zoneOptions` | ✅ | table | n/a | Same structure as `addInteractZone` (see above). |
 
-## Development Workflow
+---
+
+### `removeInteractZones(name)`
+Removes an interactable zone by name for the current resource.
+
+| Value | Required | Type | Description |
+|:------|:----------|:------|:-------------|
+| `name` | ✅ | string | The name of the interact zone to remove. |
+
+---
+
+### `addObjectModel(model, zoneOptions)`
+Adds interactable zones to all **objects** that match the specified model.
+
+| Value | Required | Type | Description |
+|:------|:----------|:------|:-------------|
+| `model` | ✅ | string | The model name to apply zones to. |
+| `zoneOptions` | ✅ | table | Same structure as `addInteractZone`. |
+
+---
+
+### `addPedModel(model, zoneOptions)`
+Adds interactable zones to all **peds** matching the specified model.
+
+| Value | Required | Type | Description |
+|:------|:----------|:------|:-------------|
+| `model` | ✅ | string | The ped model name to apply zones to. |
+| `zoneOptions` | ✅ | table | Same structure as `addInteractZone`. |
+
+---
 
 
-**Hot builds**
-When developing in-game you can use the hot build system by running
-the `dev:game` script. This will write changes to disk meaning all
-that is required is a resource restart to update the game script.
+## Notes
 
-For development in browser you can just run `dev` instead.
+- Press **Arrow Up / Down** to scroll options.  
+- Press **E** or **Enter** to select.  
+- Press **Backspace / Esc** to close the UI.  
+- Zones automatically clean up when a resource stops.
 
-**Usage**
-```sh
-pnpm dev
-```
+---
 
-**Production Builds**
 
-When you are done with development phase for your resource. You
-must create a production build that is optimized and minimized.
-
-You can do this by running the following:
-
-```sh
-pnpm build
-```
-
-## Additional Notes
-
-Need further support? Join our [Discord](https://discord.com/invite/HYwBjTbAY5)!
+**Created with ❤️ for the QB-Core Framework**
