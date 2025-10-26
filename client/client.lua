@@ -161,9 +161,7 @@ local function addZones(resource, interact)
                 showUi()
             end
         else
-            SendNUIMessage({
-                action = 'hideUI',
-            })
+            SendNUIMessage({ action = 'hideUI',})
             activeOptions = {}
             inLoop = false
             activeScript = ''
@@ -288,3 +286,10 @@ local function addPedModel(model, zoneOptions)
     end
 end
 exports('addPedModel', addPedModel)
+
+local function showInteract()
+    if #activeOptions > 0 and activeScript == GetInvokingResource() then
+        showUi()
+    end
+end
+exports('showInteract', showInteract)
